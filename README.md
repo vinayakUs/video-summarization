@@ -1,1 +1,1 @@
-# video-summarization
+# development 1.0
