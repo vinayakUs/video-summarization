@@ -1,6 +1,9 @@
+from torchvision import transforms, models
 import torch.nn as nn
 from torch.autograd import Variable
-from torchvision import transforms, models
+from pathlib import Path
+import cv2
+import numpy as np
 
 """
 pre-trained ResNet
@@ -48,3 +51,37 @@ class ResNet(nn.Module):
 
         return res_pool5
 
+
+class VideoProcessor(object):
+    def __init__(self, sample_rate: int) -> None:
+        self.sample_rate = sample_rate
+        self.resnet = ResNet()
+
+    def get_features(self, video_path: Path):
+        cap = cv2.VideoCapture(str(video_path))
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        assert cap is not None, f'Cannot open video: {video_path}'
+
+        features = []
+        n_frames = 0
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            if n_frames % self.sample_rate == 0:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                # can change the model to googleNet
+                feat = self.resnetfeatures(frame)
+                features.append(feat)
+            n_frames += 1
+
+        cap.release()
+
+        features = np.array(features)
+        return n_frames, features, fps
+
+    def run(self, video_path: Path):
+        n_frames, features, fps = self.get_features(video_path)
+        return n_frames, features, fps
