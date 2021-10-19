@@ -57,6 +57,13 @@ class VideoProcessor(object):
         self.sample_rate = sample_rate
         self.resnet = ResNet()
 
+    def resnet_features(self, frame):
+        frame = cv2.resize(frame, (224, 224))
+        res_pool5 = self.resnet(frame)
+        frame_feat = res_pool5.cpu().data.numpy().flatten()
+
+        return frame_feat
+
     def get_features(self, video_path: Path):
         cap = cv2.VideoCapture(str(video_path))
         fps = cap.get(cv2.CAP_PROP_FPS)
@@ -73,7 +80,7 @@ class VideoProcessor(object):
             if n_frames % self.sample_rate == 0:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 # can change the model to googleNet
-                feat = self.resnetfeatures(frame)
+                feat = self.resnet_features(frame)
                 features.append(feat)
             n_frames += 1
 
