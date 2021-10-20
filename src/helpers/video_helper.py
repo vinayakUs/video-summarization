@@ -4,6 +4,7 @@ from torch.autograd import Variable
 from pathlib import Path
 import cv2
 import numpy as np
+from src.kts.cpd_auto import cpd_auto
 
 """
 pre-trained ResNet
@@ -89,6 +90,25 @@ class VideoProcessor(object):
         features = np.array(features)
         return n_frames, features, fps
 
+    def kts(self, n_frames, features):
+        seq_len = len(features)
+        picks = np.arange(0, seq_len) * self.sample_rate
+
+        # compute change points using KTS
+        kernel = np.matmul(features, features.T)
+        change_points, _ = cpd_auto(kernel, seq_len - 1, 1, verbose=False)
+        change_points *= self.sample_rate
+        change_points = np.hstack((0, change_points, n_frames))
+        begin_frames = change_points[:-1]
+        end_frames = change_points[1:]
+        change_points = np.vstack((begin_frames, end_frames - 1)).T
+
+        n_frame_per_seg = end_frames - begin_frames
+        return change_points, n_frame_per_seg, picks
+
     def run(self, video_path: Path):
         n_frames, features, fps = self.get_features(video_path)
-        return n_frames, features, fps
+        cps, nfps, picks = self.kts(n_frames, features)
+        assert isinstance(picks, object)
+        return n_frames, features, fps, cps, nfps, picks
+
