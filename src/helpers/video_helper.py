@@ -112,3 +112,4 @@ class VideoProcessor(object):
         assert isinstance(picks, object)
         return n_frames, features, fps, cps, nfps, picks
 
+
